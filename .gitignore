@@ -50,3 +50,4 @@ rsconnect/
 
 # Project specific
 data/raw/
+.positai
