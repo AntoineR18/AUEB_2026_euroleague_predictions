@@ -36,6 +36,8 @@ teams_map <- c(
 
 teams25 <- names(teams_map)
 
+teams_map_inv <- setNames(teams25, teams_map)
+
 # ── Loading standings ─────────────────────────────────────────────────────────
 
 load_record <- function(path) {
@@ -45,6 +47,7 @@ load_record <- function(path) {
     mutate(team = str_trim(str_remove(team, "\\*")))
 }
 
+record21 <- load_record("data/raw/eul/standings/eul_20-21_standings.csv")
 record22 <- load_record("data/raw/eul/standings/eul_21-22_standings.csv")
 record23 <- load_record("data/raw/eul/standings/eul_22-23_standings.csv")
 record24 <- load_record("data/raw/eul/standings/eul_23-24_standings.csv")
@@ -52,6 +55,24 @@ record25 <- load_record("data/raw/eul/standings/eul_24-25_standings.csv")
 
 # ── Team name harmonization ───────────────────────────────────────────────────
 
+record21 <- record21 |>
+  mutate(team = recode(team,
+                       "Barcelona" = "FCB",
+                       "Anadolu Efes" = "EFS",
+                       "AX Armani Exchange Milan" = "MIL",
+                       "Bayern München" = "BAY",
+                       "Real Madrid" = "RMB",
+                       "Fenerbahçe Beko" = "FBB",
+                       "TD Systems Baskonia" = "BKN",
+                       "Žalgiris" = "ZAL",
+                       "Olympiacos" = "OLY",
+                       "Maccabi Playtika Tel Aviv" = "MTA",
+                       "LDLC ASVEL" = "ASV",
+                       "ALBA Berlin" = "BER",
+                       "Panathinaikos OPAP" = "PAO",
+                       "Crvena zvezda mts" = "CZV"
+  ))
+  
 record22 <- record22 |>
   mutate(team = recode(team,
                        "Barcelona"                 = "FCB",
@@ -135,18 +156,72 @@ record25 <- record25 |>
                        "Žalgiris"                  = "ZAL"
   ))
 
+reg25 <- reg25 |>
+  mutate(
+    team_home = teams_map_inv[team_home],
+    team_away = teams_map_inv[team_away]
+  )
+
 # ── Weighted historical form score ────────────────────────────────────────────
 
-weights <- c("25" = 0.70, "24" = 0.15, "23" = 0.10, "22" = 0.05)
+weights <- c("24" = 0.70, "23" = 0.15, "22" = 0.10, "21" = 0.05)
 
 record_hist <- bind_rows(
-  record25 |> mutate(season = "25"),
-  record24 |> mutate(season = "24"),
-  record23 |> mutate(season = "23"),
-  record22 |> mutate(season = "22")
+  record25 |> mutate(season = "24"),
+  record24 |> mutate(season = "23"),
+  record23 |> mutate(season = "22"),
+  record22 |> mutate(season = "21")
 ) |>
   filter(team %in% teams25) |>
   mutate(weight = weights[season]) |>
   group_by(team) |>
   summarise(form = sum(record * weight) / sum(weight)) |>
   arrange(desc(form))
+
+# ── Design matrix  ────────────────────────────────────────────────
+
+n <- nrow(reg25)
+d <- length(teams25)
+
+X <- matrix(0, n, d)
+colnames(X) <- teams25
+
+for (i in 1:n) {
+  X[i, reg25$team_home[i]] <- 1
+  X[i, reg25$team_away[i]] <- -1
+}
+
+# ── Model fitting ─────────────────────────────────────────────────────────────
+
+leader25 <- record25$team[1]
+
+df_model <- as.data.frame(X[, -which(colnames(X) == leader25)])
+df_model$score_diff <- reg25$score_diff
+
+fit <- lm(score_diff ~ . - 1, data = df_model)
+summary(fit)
+
+# ── Predictions ───────────────────────────────────────────────────────────────
+
+predict_score_diff <- function(team_home, team_away, fit) {
+  alpha <- coef(fit)
+  alpha_home <- ifelse(team_home %in% names(alpha), alpha[team_home], 0)
+  alpha_away <- ifelse(team_away %in% names(alpha), alpha[team_away], 0)
+  
+  unname(alpha_home - alpha_away)
+}
+
+play25 <- read_csv("data/raw/eul/po/eul_24-25_po.csv") |>
+  rename(team_home = Team, pts_home = PTS...3,
+         team_away = Opp,  pts_away = PTS...5) |>
+  mutate(
+    score_diff = pts_home - pts_away,
+    team_home = teams_map_inv[team_home],
+    team_away = teams_map_inv[team_away]
+  )
+
+play25 <- play25 |>
+  mutate(pred = mapply(predict_score_diff, team_home, team_away, MoreArgs = list(fit = fit)))
+
+play25 
+reg25
