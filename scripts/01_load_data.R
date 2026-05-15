@@ -140,4 +140,3 @@ standings <- list()
 for (i in 21:26){
   standings[[paste0(i)]] <- load_data("standings", paste0(i-1, "-", i))
 }
-rm(i)

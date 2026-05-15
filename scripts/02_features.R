@@ -11,6 +11,7 @@ clean_matches <- function(df, type, season) {
            team_home = recode(team_home, !!!team_codes[[season]]),
            team_away = recode(team_away, !!!team_codes[[season]]),
            score_diff = pts_home - pts_away,
+           win = ifelse(score_diff > 0, 1, 0),
            playoff = ifelse(type == "reg", 0, 1)
            )
 }
