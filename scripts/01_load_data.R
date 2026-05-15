@@ -1,28 +1,129 @@
-# __ Team dictionary ___________________________________________________________
-teams_map <- c(
-  "ASV" = "LDLC ASVEL",
-  "BAY" = "Bayern München",
-  "BER" = "ALBA Berlin",
-  "BKN" = "Baskonia",
-  "CZV" = "Crvena zvezda Meridianbet",
-  "DUB" = "Dubai",
-  "EFS" = "Anadolu Efes",
-  "FBB" = "Fenerbahçe Beko",
-  "FCB" = "Barcelona",
-  "HTA" = "Hapoel IBI Tel Aviv",
-  "MIL" = "EA7 Emporio Armani Milano",
-  "MON" = "AS Monaco",
-  "MTA" = "Maccabi Playtika Tel Aviv",
-  "OLY" = "Olympiacos",
-  "PAO" = "Panathinaikos AKTOR",
-  "PAR" = "Partizan Mozzart Bet",
-  "PBB" = "Paris Basketball",
-  "RMB" = "Real Madrid",
-  "VBC" = "Valencia Basket",
-  "VIR" = "Virtus Segafredo Bologna",
-  "ZAL" = "Žalgiris"
+# __ Team name harmonization ___________________________________________________
+team_codes <- list(
+  `21` = c(
+    "LDLC ASVEL"                = "ASV",
+    "Bayern München"            = "BAY",
+    "Alba Berlin"               = "BER",
+    "TD Systems Baskonia"       = "BKN",
+    "Crvena zvezda mts"         = "CZV",
+    "Anadolu Efes"              = "EFS",
+    "Fenerbahçe Beko"           = "FBB",
+    "Barcelona"                 = "FCB",
+    "AX Armani Exchange Milan"  = "MIL",
+    "Maccabi Playtika Tel Aviv" = "MTA",
+    "Olympiacos"                = "OLY",
+    "Panathinaikos OPAP"        = "PAO",
+    "Real Madrid"               = "RMB",
+    "Valencia Basket"           = "VBC",
+    "Žalgiris"                  = "ZAL"
+  ),
+  
+  `22` = c(
+    "LDLC ASVEL"                = "ASV",
+    "Bayern München"            = "BAY",
+    "Alba Berlin"               = "BER",
+    "Bitci Baskonia"            = "BKN",
+    "Crvena zvezda mts"         = "CZV",
+    "Anadolu Efes"              = "EFS",
+    "Fenerbahçe Beko"           = "FBB",
+    "Barcelona"                 = "FCB",
+    "AIX Armani Exchange Milan" = "MIL",
+    "AS Monaco"                 = "MON",
+    "Maccabi Tel Aviv"          = "MTA",
+    "Olympiacos"                = "OLY",
+    "Panathinaikos OPAP"        = "PAO",
+    "Real Madrid"               = "RMB",
+    "Žalgiris"                  = "ZAL"
+  ),
+  
+  
+  `23` = c(
+    "LDLC ASVEL"               = "ASV",
+    "Bayern München"           = "BAY",
+    "Alba Berlin"              = "BER",
+    "Cazoo Baskonia"           = "BKN",
+    "Crvena zvezda mts"        = "CZV",
+    "Anadolu Efes"             = "EFS",
+    "Fenerbahçe Beko"          = "FBB",
+    "Barça"                    = "FCB",
+    "EA7 Emporio Armani Milan" = "MIL",
+    "AS Monaco"                = "MON",
+    "Maccabi Tel Aviv"         = "MTA",
+    "Olympiacos"               = "OLY",
+    "Panathinaikos"            = "PAO",
+    "Partizan Mozzart Bet"     = "PAR",
+    "Real Madrid"              = "RMB",
+    "Valencia Basket"          = "VBC",
+    "Virtus Segafredo Bologna" = "VIR",
+    "Žalgiris"                 = "ZAL"
+  ),
+  
+  `24` = c(
+    "LDLC ASVEL"                = "ASV",
+    "Bayern München"            = "BAY",
+    "ALBA Berlin"               = "BER",
+    "Baskonia"                  = "BKN",
+    "Crvena zvezda Meridianbet" = "CZV",
+    "Anadolu Efes"              = "EFS",
+    "Fenerbahçe Beko"           = "FBB",
+    "Barcelona"                 = "FCB",
+    "EA7 Emporio Armani Milano" = "MIL",
+    "AS Monaco"                 = "MON",
+    "Maccabi Playtika Tel Aviv" = "MTA",
+    "Olympiacos"                = "OLY",
+    "Panathinaikos"             = "PAO",
+    "Partizan Mozzart Bet"      = "PAR",
+    "Real Madrid"               = "RMB",
+    "Valencia Basket"           = "VBC",
+    "Virtus Segafredo Bologna"  = "VIR",
+    "Žalgiris"                  = "ZAL"
+  ),
+  
+  `25` = c(
+    "LDLC ASVEL"                = "ASV",
+    "Bayern München"            = "BAY",
+    "ALBA Berlin"               = "BER",
+    "Baskonia"                  = "BKN",
+    "Crvena zvezda Meridianbet" = "CZV",
+    "Anadolu Efes"              = "EFS",
+    "Fenerbahçe Beko"           = "FBB",
+    "Barcelona"                 = "FCB",
+    "EA7 Emporio Armani Milano" = "MIL",
+    "AS Monaco"                 = "MON",
+    "Maccabi Playtika Tel Aviv" = "MTA",
+    "Olympiacos"                = "OLY",
+    "Panathinaikos AKTOR"       = "PAO",
+    "Partizan Mozzart Bet"      = "PAR",
+    "Paris Basketball"          = "PBB",
+    "Real Madrid"               = "RMB",
+    "Virtus Segafredo Bologna"  = "VIR",
+    "Žalgiris"                  = "ZAL"
+  ),
+  
+  `26` = c(
+    "LDLC ASVEL"                = "ASV",
+    "Bayern München"            = "BAY",
+    "Baskonia"                  = "BKN",
+    "Crvena zvezda Meridianbet" = "CZV",
+    "Dubai"                     = "DUB",
+    "Anadolu Efes"              = "EFS",
+    "Fenerbahçe Beko"           = "FBB",
+    "Barcelona"                 = "FCB",
+    "Hapoel IBI Tel Aviv"       = "HTA",
+    "EA7 Emporio Armani Milano" = "MIL",
+    "AS Monaco"                 = "MON",
+    "Maccabi Rapyd Tel Aviv"    = "MTA",
+    "Olympiacos"                = "OLY",
+    "Panathinaikos AKTOR"       = "PAO",
+    "Partizan Mozzart Bet"      = "PAR",
+    "Paris Basketball"          = "PBB",
+    "Real Madrid"               = "RMB",
+    "Valencia Basket"           = "VBC",
+    "Virtus Olidata Bologna"    = "VIR",
+    "Žalgiris"                  = "ZAL"
+  )
 )
-teams <- names(teams_map)
+all_teams <- unique(unlist(team_codes))
 
 # __ Raw data __________________________________________________________________
 load_data <- function(type, season){
