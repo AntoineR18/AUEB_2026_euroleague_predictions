@@ -8,7 +8,7 @@ prepare_glm_data <- function(df, team_ref) {
       team_away = relevel(team_away, ref = team_ref)
     )
 }
-train_reg25 <- prepare_glm_data(train_reg25, "OLY")
+train_reg25_OLS <- prepare_glm_data(train_reg25, "OLY")
 
 # __ Initial train _____________________________________________________________
 fit_logit <- glm(win ~ team_home + team_away + playoff,

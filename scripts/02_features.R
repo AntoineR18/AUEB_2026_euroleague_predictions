@@ -1,10 +1,10 @@
-# __ Regular & playoffs ________________________________________________________
+# __ Train & validation data ___________________________________________________
 clean_matches <- function(df, type, season) {
   Sys.setlocale("LC_TIME", "C")
   df_clean <- df |>
     rename(date = Date,
-           team_home = Team, pts_home = `PTS...3`,
-           team_away = Opp, pts_away = `PTS...5`) |>
+           team_home = Opp, pts_home = `PTS...5`,
+           team_away = Team, pts_away = `PTS...3`) |>
     filter(!is.na(pts_home)) |>
     mutate(date = trimws(date),
            date = as.Date(date, "%a %b %d %Y"),
@@ -16,12 +16,36 @@ clean_matches <- function(df, type, season) {
            )
 }
 
-train_reg25 <- clean_matches(regular25, "reg", "25")
-val_po25 <- clean_matches(playoffs25, "po", "25")
-val_reg26 <- clean_matches(regular26, "reg", "26")
-val <- bind_rows(val_po25, val_reg26) |>
+train <- clean_matches(regular25, "reg", "25")
+
+val <- bind_rows(
+  clean_matches(playoffs25, "po", "25"),
+  clean_matches(regular26, "reg", "26")) |>
   arrange(date)
 
+# __ Test data _________________________________________________________________
+matches_po26 <- list(
+  QF1 = c("OLY", "MON"),
+  QF2 = c("VBC", "PAO"),
+  QF3 = c("RMB", "HTA"),
+  QF4 = c("FBB", "ZAL")
+)
+
+playoffs26 <- expand.grid(
+  serie = names(matches_po26),
+  match_number = 1:5
+) |>
+  transform(
+    match_played = FALSE,
+    team_A = sapply(serie, function(s) matches_po26[[s]][1]),
+    team_B = sapply(serie, function(s) matches_po26[[s]][2]),
+    score_diff = NA_integer_,
+    win_A = 0L,
+    win_B = 0L
+  )
+
+# final_four <- 
+  
 # # __ Records ___________________________________________________________________
 # records <- list()
 # for (i in 21:26) {
