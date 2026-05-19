@@ -1,0 +1,43 @@
+---
+title: "rapport_po26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+load("euroleague_po26.RData")
+```
+
+---
+title: "Euroleague playoffs 2026 predictions"
+output: pdf_document
+---
+
+## OLS model - After training (regular season 2025)
+
+```{r}
+summary(fit_OLS_initial)
+```
+
+## OLS model - After validation (playoffs 2025 + regular season 2026)
+
+```{r}
+summary(fit_OLS_validated)
+```
+
+## OLS model - After predictions (playoffs 2026)
+
+```{r}
+summary(fit_OLS_after_po26)
+```
+
+## Playoffs 2026 predictions
+
+```{r}
+knitr::kable(predicted_po26$playoffs26)
+```
+
+## Final Four 2026 predictions
+
+```{r}
+knitr::kable(ff4)
+```

@@ -126,18 +126,40 @@ team_codes <- list(
 all_teams <- unique(unlist(team_codes))
 
 # __ Raw data __________________________________________________________________
-load_data <- function(type, season){
-  path <-  file.path("data", "raw", "eul", type,
-                     paste0("eul", "_", season, "_", type, ".csv"))
+load_data <- function (type, season) {
+  
+  path <-  file.path(
+    "data", "raw", "eul", type,
+    paste0("eul", "_", season, "_", type, ".csv")
+  )
   read_csv(path)
 }
 
-regular25 <- load_data("reg", "24-25")
-playoffs25 <- load_data("po", "24-25")
-regular26 <- load_data("reg", "25-26")
-
-standings <- list()
-for (i in 21:26){
-  standings[[paste0(i)]] <- load_data("standings", paste0(i-1, "-", i))
+load_games <- function () {
+  
+  reg <- list()
+  po <- list()
+  
+  for (i in 21:26) {
+    reg[[paste0(i)]] <- load_data("reg", paste0(i-1, "-", i))
+    if (i == 26) {next}
+    po[[paste0(i)]] <- load_data("po", paste0(i-1, "-", i))
+  }
+  return(list(
+    regular = reg,
+    playoffs = po
+  ))
 }
-rm(i)
+games <- load_games()
+
+load_standings <- function () {
+  
+  standings <- list()
+  
+  for (i in 21:26){
+    standings[[paste0(i)]] <- load_data("standings", paste0(i-1, "-", i))
+  }
+  return(standings)
+}
+standings <- load_standings()
+
