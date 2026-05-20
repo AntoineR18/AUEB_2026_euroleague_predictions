@@ -1,4 +1,134 @@
-# __ Train & validation data ___________________________________________________
+# __ Team name harmonization ___________________________________________________
+create_team_codes <- function () {
+  team_codes <- list(
+    `21` = c(
+      "LDLC ASVEL"                = "ASV",
+      "Bayern München"            = "BAY",
+      "Alba Berlin"               = "BER",
+      "TD Systems Baskonia"       = "BKN",
+      "Crvena zvezda mts"         = "CZV",
+      "Anadolu Efes"              = "EFS",
+      "Fenerbahçe Beko"           = "FBB",
+      "Barcelona"                 = "FCB",
+      "AX Armani Exchange Milan"  = "MIL",
+      "Maccabi Playtika Tel Aviv" = "MTA",
+      "Olympiacos"                = "OLY",
+      "Panathinaikos OPAP"        = "PAO",
+      "Real Madrid"               = "RMB",
+      "Valencia Basket"           = "VBC",
+      "Žalgiris"                  = "ZAL"
+    ),
+    
+    `22` = c(
+      "LDLC ASVEL"                = "ASV",
+      "Bayern München"            = "BAY",
+      "Alba Berlin"               = "BER",
+      "Bitci Baskonia"            = "BKN",
+      "Crvena zvezda mts"         = "CZV",
+      "Anadolu Efes"              = "EFS",
+      "Fenerbahçe Beko"           = "FBB",
+      "Barcelona"                 = "FCB",
+      "AIX Armani Exchange Milan" = "MIL",
+      "AS Monaco"                 = "MON",
+      "Maccabi Tel Aviv"          = "MTA",
+      "Olympiacos"                = "OLY",
+      "Panathinaikos OPAP"        = "PAO",
+      "Real Madrid"               = "RMB",
+      "Žalgiris"                  = "ZAL"
+    ),
+    
+    
+    `23` = c(
+      "LDLC ASVEL"               = "ASV",
+      "Bayern München"           = "BAY",
+      "Alba Berlin"              = "BER",
+      "Cazoo Baskonia"           = "BKN",
+      "Crvena zvezda mts"        = "CZV",
+      "Anadolu Efes"             = "EFS",
+      "Fenerbahçe Beko"          = "FBB",
+      "Barcelona"                    = "FCB",
+      "EA7 Emporio Armani Milan" = "MIL",
+      "AS Monaco"                = "MON",
+      "Maccabi Tel Aviv"         = "MTA",
+      "Olympiacos"               = "OLY",
+      "Panathinaikos"            = "PAO",
+      "Partizan Mozzart Bet"     = "PAR",
+      "Real Madrid"              = "RMB",
+      "Valencia Basket"          = "VBC",
+      "Virtus Segafredo Bologna" = "VIR",
+      "Žalgiris"                 = "ZAL"
+    ),
+    
+    `24` = c(
+      "LDLC ASVEL"                = "ASV",
+      "Bayern München"            = "BAY",
+      "ALBA Berlin"               = "BER",
+      "Baskonia"                  = "BKN",
+      "Crvena zvezda Meridianbet" = "CZV",
+      "Anadolu Efes"              = "EFS",
+      "Fenerbahçe Beko"           = "FBB",
+      "Barcelona"                 = "FCB",
+      "EA7 Emporio Armani Milano" = "MIL",
+      "AS Monaco"                 = "MON",
+      "Maccabi Playtika Tel Aviv" = "MTA",
+      "Olympiacos"                = "OLY",
+      "Panathinaikos"             = "PAO",
+      "Partizan Mozzart Bet"      = "PAR",
+      "Real Madrid"               = "RMB",
+      "Valencia Basket"           = "VBC",
+      "Virtus Segafredo Bologna"  = "VIR",
+      "Žalgiris"                  = "ZAL"
+    ),
+    
+    `25` = c(
+      "LDLC ASVEL"                = "ASV",
+      "Bayern München"            = "BAY",
+      "ALBA Berlin"               = "BER",
+      "Baskonia"                  = "BKN",
+      "Crvena zvezda Meridianbet" = "CZV",
+      "Anadolu Efes"              = "EFS",
+      "Fenerbahçe Beko"           = "FBB",
+      "Barcelona"                 = "FCB",
+      "EA7 Emporio Armani Milano" = "MIL",
+      "AS Monaco"                 = "MON",
+      "Maccabi Playtika Tel Aviv" = "MTA",
+      "Olympiacos"                = "OLY",
+      "Panathinaikos AKTOR"       = "PAO",
+      "Partizan Mozzart Bet"      = "PAR",
+      "Paris Basketball"          = "PBB",
+      "Real Madrid"               = "RMB",
+      "Virtus Segafredo Bologna"  = "VIR",
+      "Žalgiris"                  = "ZAL"
+    ),
+    
+    `26` = c(
+      "LDLC ASVEL"                = "ASV",
+      "Bayern München"            = "BAY",
+      "Baskonia"                  = "BKN",
+      "Crvena zvezda Meridianbet" = "CZV",
+      "Dubai"                     = "DUB",
+      "Anadolu Efes"              = "EFS",
+      "Fenerbahçe Beko"           = "FBB",
+      "Barcelona"                 = "FCB",
+      "Hapoel IBI Tel Aviv"       = "HTA",
+      "EA7 Emporio Armani Milano" = "MIL",
+      "AS Monaco"                 = "MON",
+      "Maccabi Rapyd Tel Aviv"    = "MTA",
+      "Olympiacos"                = "OLY",
+      "Panathinaikos AKTOR"       = "PAO",
+      "Partizan Mozzart Bet"      = "PAR",
+      "Paris Basketball"          = "PBB",
+      "Real Madrid"               = "RMB",
+      "Valencia Basket"           = "VBC",
+      "Virtus Olidata Bologna"    = "VIR",
+      "Žalgiris"                  = "ZAL"
+    )
+  )
+}
+team_codes <- create_team_codes()
+all_teams <- unique(unlist(team_codes))
+
+# __ Processed data ____________________________________________________________
 clean_matches <- function(df, type, season) {
   
   Sys.setlocale("LC_TIME", "C")
@@ -19,7 +149,7 @@ clean_matches <- function(df, type, season) {
       team_away = recode(team_away, !!!team_codes[[season]]),
       score_diff = pts_home - pts_away,
       win = ifelse(score_diff > 0, 1, 0),
-      playoff = ifelse(type == "reg", 0, 1)
+      playoff = ifelse(type == "regular", 0, 1)
     )
 }
 
@@ -29,124 +159,99 @@ games <- imap(games, function(type_list, type) {
   })
 })
 
-train <- clean_matches(games$regular$`25`, "reg", "25")
+# __ Train & validation data ___________________________________________________
+train_reg25 <- games$regular$`25`
 
-val <- bind_rows(
-  clean_matches(games$playoffs$`25`, "po", "25"),
-  clean_matches(games$regular$`26`, "reg", "26")
-) |>
+val_po25 <- games$playoffs$`25` |>
+  arrange(date)
+val_reg26 <- games$regular$`26` |>
+  arrange(date)
+val_po26 <- games$playoffs$`26`|>
   arrange(date)
 
-# __ Test data _________________________________________________________________
-matches_po26 <- list(
-  QF1 = c("OLY", "MON"),
-  QF2 = c("VBC", "PAO"),
-  QF3 = c("RMB", "HTA"),
-  QF4 = c("FBB", "ZAL")
-)
-
-playoffs26_pred <- expand.grid(
-  serie = names(matches_po26),
-  match_number = 1:5
-) |>
-  transform(
-    match_played = FALSE,
-    team_A = sapply(serie, function(s) matches_po26[[s]][1]),
-    team_B = sapply(serie, function(s) matches_po26[[s]][2]),
-    score_diff = NA_integer_,
-    win_A = 0L,
-    win_B = 0L
-  )
-
-create_true_po26 <- function (df = playoffs26_pred) {
+# __ Previous seasons effect ___________________________________________________
+create_total_diff <- function (season, phase) {
   
-  score_diffs <- list(
-    "QF1" = c(21, 30, 23),
-    "QF2" = c(-1, -2, 4, 3, 17),
-    "QF3" = c(4, 27, -7, 6),
-    "QF4" = c(11, 12, -3, 4)
-  )
-  for (s in unique(df$serie)) {
-    for (i in 1:5) {
-      
-      score_diff <- score_diffs[[s]][i]
-      
-      if (!is.na(score_diff)) {
-        df[df$serie == s & df$match_number == i, "match_played"] <- TRUE
-        df[df$serie == s & df$match_number == i, "score_diff"] <- score_diff
-        if (score_diff > 0) {
-          df[df$serie == s & df$match_number == i, "win_A"] <-
-            max(df[df$serie == s, "win_A"]) + 1 
-        } else {
-          df[df$serie == s & df$match_number == i, "win_B"] <-
-            max(df[df$serie == s, "win_B"]) + 1 
-        }
-      }
+  poids <- c(0.70, 0.15, 0.10, 0.05)
+  seasons <- if (phase == "reg") {
+    as.character(as.numeric(season) - 1:4)
+  } else {
+    as.character(as.numeric(season) - 0:3)
+  }
+  weights <- setNames(poids, seasons)
+  df <- NULL
+  
+  for (s in seasons) {
+    if (s == seasons[1]) {
+      df <- bind_rows(
+        df,
+        games$regular[[s]] |>
+          mutate(season = s, type = "reg")
+      )
+    } else {
+      df <- bind_rows(
+        df,
+        games$regular[[s]] |>
+          mutate(season = s, type = "reg"),
+        games$playoffs[[s]] |>
+          mutate(season = s, type = "po")
+      )
     }
   }
-  df <- df |> 
-    filter(match_played) |>
-    select(!match_played)
+  home <- df |>
+    select(season, team = team_home, pts_team = pts_home, pts_opp = pts_away)
+  away <- df |>
+    select(season, team = team_away, pts_team = pts_away, pts_opp = pts_home)
+  df <- bind_rows(home, away) |>
+    group_by(team, season) |>
+    summarise(total_diff = sum(pts_team - pts_opp), .groups = "drop") |>
+    mutate(weight = weights[season]) |>
+    group_by(team) |>
+    summarise(total_diff_weighted = sum(total_diff * weight)) |>
+    filter(team %in% all_teams)
   return(df)
 }
+total_diff <- list(
+  "reg25"   = create_total_diff("25", "reg"),
+  "po25" = create_total_diff("25", "po"),
+  "reg26"   = create_total_diff("26", "reg"),
+  "po26" = create_total_diff("26", "po")
+)
 
-playoffs26_true <- create_true_po26()
-
-# __ Records ___________________________________________________________________
-create_records <- function (df = standings) {
+join_total_diff <- function (train_reg25, val_po25, val_reg26, val_po26) {
   
-  records <- list()
-  
-  for (i in 21:26) {
+  for (s in c("reg25", "po25", "reg26", "po26")) {
     
-    records[[paste0(i)]] <- standings[[paste0(i)]] |>
-      rename(team = Team, record = `W/L%`) |>
-      select(team, record) |>
-      mutate(team = str_trim(str_remove(team, "\\*")))
-  }
-  
-  records <- records |>
-    imap(
-      ~ .x |>
-        mutate(team = recode(team, !!!team_codes[[.y]])) |>
-        filter(team %in% all_teams) |>
-        arrange(team)
+    total_diff_home <- total_diff[[s]] |>
+      rename(total_diff_home = total_diff_weighted)
+    total_diff_away <- total_diff[[s]] |>
+      rename(total_diff_away = total_diff_weighted)
+    
+    switch (s,
+      "reg25" = train_reg25 <- train_reg25 |>
+        left_join(total_diff_home, by = c("team_home" = "team")) |>
+        left_join(total_diff_away, by = c("team_away" = "team")) |>
+        mutate(across(c(total_diff_home, total_diff_away), ~ replace_na(.x, 0))),
+      "po25" = val_po25 <- val_po25 |>
+        left_join(total_diff_home, by = c("team_home" = "team")) |>
+        left_join(total_diff_away, by = c("team_away" = "team")) |>
+        mutate(across(c(total_diff_home, total_diff_away), ~ replace_na(.x, 0))),
+      "reg26" = val_reg26 <- val_reg26 |>
+        left_join(total_diff_home, by = c("team_home" = "team")) |>
+        left_join(total_diff_away, by = c("team_away" = "team")) |>
+        mutate(across(c(total_diff_home, total_diff_away), ~ replace_na(.x, 0))),
+      "po26" = val_po26 <- val_po26 |>
+        left_join(total_diff_home, by = c("team_home" = "team")) |>
+        left_join(total_diff_away, by = c("team_away" = "team")) |>
+        mutate(across(c(total_diff_home, total_diff_away), ~ replace_na(.x, 0)))
     )
-  return(records)
+  }
+  return(list(
+    train = train_reg25,
+    val = bind_rows(val_po25, val_reg26, val_po26) |>
+      arrange(date)
+  ))
 }
-
-records <- create_records()
-  
-# __ Weighted historical form score ____________________________________________
-weights25 <- c("24" = 0.70, "23" = 0.15, "22" = 0.10, "21" = 0.05)
-weights26 <- c("25" = 0.70, "24" = 0.15, "23" = 0.10, "22" = 0.05)
-weights_po26 <- c("26" = 0.70, "25" = 0.15, "24" = 0.10, "23" = 0.05)
-
-record_hist <- bind_rows(
-  records$`26` |> mutate(season = "26"),
-  records$`25` |> mutate(season = "25"),
-  records$`24` |> mutate(season = "24"),
-  records$`23` |> mutate(season = "23"),
-  records$`22` |> mutate(season = "22"),
-  records$`21` |> mutate(season = "21")
-) |>
-  filter(team %in% all_teams) |>
-  mutate(
-    weight25 = weights25[season],
-    weight26 = weights26[season],
-    weight_po26 = weights_po26[season],
-    score_diff = sum(games$regular[[paste0(season)]])
-  ) |>
-  group_by(team) |>
-  summarise(
-    form25 = sum(
-      record * weight25, na.rm = TRUE) /
-      sum(weight25, na.rm = TRUE),
-    form26 = sum(
-      record * weight26, na.rm = TRUE) /
-      sum(weight26, na.rm = TRUE)
-  ) |>
-  mutate(
-    across(c(form25, form26), ~ replace_na(.x, mean(.x, na.rm = TRUE)))
-  )
-
+joined_games <- join_total_diff(train_reg25, val_po25, val_reg26, val_po26)
+train <- joined_games$train
+val <- joined_games$val
