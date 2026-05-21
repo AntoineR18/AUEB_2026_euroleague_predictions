@@ -8,8 +8,7 @@ prepare_data <- function (df, team_ref) {
       team_away = factor(team_away, levels = all_teams),
       team_home = relevel(team_home, ref = team_ref),
       team_away = relevel(team_away, ref = team_ref)
-    ) |>
-    droplevels()
+    )
 }
 train <- prepare_data(train, "OLY")
 
@@ -19,13 +18,27 @@ fit <- lm(
     team_home + team_away + 
     # playoff + wins_A + wins_B +
     total_diff_home + total_diff_away,
+  # contrasts = list(
+  #   team_home = contr.sum,
+  #   team_away = contr.sum
+  # ),
+  data = train
+)
+summary(fit)
+
+fit_trained_without_intercept <- lm(
+  score_diff ~
+    team_home + team_away +
+    # playoff + wins_A + wins_B +
+    total_diff_home + total_diff_away
+  ,
   contrasts = list(
     team_home = contr.sum,
     team_away = contr.sum
   ),
   data = train
 )
-summary(fit)
+summary(fit_trained_without_intercept)
 
 # __ Predictions without home effect for Final Four games ______________________
 predict_without_home_effect <- function (
@@ -35,10 +48,10 @@ predict_without_home_effect <- function (
     team_A,
     team_B
 ) {
-  
+
   # 1. Get correct season
   td <- td[[paste0("playoffs", season)]]
-  
+
   # 2.1. Create home game
   game_1 <- tibble(
     team_home = team_A,
@@ -54,7 +67,7 @@ predict_without_home_effect <- function (
       pull(total_diff_weighted)
   ) |>
     prepare_data("OLY")
-  
+
   # 2.2. Create away game
   game_2 <- tibble(
     team_home = team_B,
@@ -70,7 +83,7 @@ predict_without_home_effect <- function (
       pull(total_diff_weighted)
   ) |>
     prepare_data("OLY")
-  
+
   # 3. Predict according to model
   pred_1 <- predict(
     model,
@@ -84,7 +97,7 @@ predict_without_home_effect <- function (
     interval = "prediction",
     level = 0.95
   )
-  
+
   return(
     matrix(
       (pred_1 - pred_2) / 2,
@@ -94,12 +107,22 @@ predict_without_home_effect <- function (
   )
 }
 
+# __ Clean environment _________________________________________________________
+to_keep <- c(
+  "games", "team_codes", "all_teams",
+  "train", "val_po26", "total_diff",
+  "prepare_data", "train", "fit", "predict_without_home_effect")
+rm(list = setdiff(ls(), to_keep))
+
 # __ Sequential validation using MC estimation _________________________________
+n <- 10000
+seed <- 1807
+
 validate_MC <- function (n, seed, train, val, model) {
-  
+
   set.seed(seed)
   train_rolling <- train
-  
+
   # 0. Initialize predictions
   predictions <- vector("list", nrow(val))
 
@@ -107,7 +130,7 @@ validate_MC <- function (n, seed, train, val, model) {
 
     # 1. Prepare current match
     match_i <- prepare_data(val[i, ], "OLY")
-  
+
     # 2. Solve unknown teams issue
     known_home <- unique(as.character(train_rolling$team_home))
     known_away <- unique(as.character(train_rolling$team_away))
@@ -165,7 +188,7 @@ validate_MC <- function (n, seed, train, val, model) {
     # 4. Feed model with current match
     train_rolling <- bind_rows(train_rolling, match_i) |>
       prepare_data("OLY")
-    
+
     model <- lm(
       score_diff ~
         team_home + team_away +
@@ -186,186 +209,285 @@ validate_MC <- function (n, seed, train, val, model) {
   ))
 }
 
-validated_MC <- validate_MC(100, 1807, train, val_po26, fit)
-fit <- validated_MC$fit
-predictions_po26 <<- validated_MC$predictions
+validated <- validate_MC(n, seed, train, val_po26, fit)
+train_rolling <- validated$train_rolling
+fit <- validated$fit
+predictions_po26 <- validated$predictions
 
-# __ Final Four predictions ____________________________________________________
-predict_f426 <- function(
+# validated_trained_without_intercept <-
+#   validate_MC(n, seed, train, val_po26, fit_trained_without_intercept)
+# fit_trained_without_intercept <-
+#   validated_trained_without_intercept$fit
+# predictions_po26_trained_without_intercept <-
+#   validated_trained_without_intercept$predictions
+
+# __ Final Four prediction _____________________________________________________
+predict_f426_one_game <- function(
+    n,
+    seed,
     td = total_diff$po26,
-    model
+    model,
+    game_name,
+    team_A,
+    team_B,
+    intercept
 ) {
-  
+
   sigma <- summary(model)$sigma
-  n <- 10000
-  set.seed(1807)
-  
-  pred_SF1 <- predict_without_home_effect(
+  set.seed(seed)
+
+  pred <- predict_without_home_effect(
     model = model,
     season = "26",
-    team_A = "OLY",
-    team_B = "FBB"
+    team_A = team_A,
+    team_B = team_B
   )[, "fit"]
-  MC_SF1 <- rnorm(n, pred_SF1, sigma)
-  prob_SF1 <- mean(MC_SF1 > 0)
-  if (prob_SF1 > 0.5) {winner1 <- "OLY"; loser1 <- "FBB"}
-  else {winner1 <- "FBB"; loser1 <- "OLY"}
-  
-  pred_SF2 <- predict_without_home_effect(
-    model = model,
-    season = "26",
-    team_A = "VBC",
-    team_B = "RMB"
-  )[, "fit"]
-  MC_SF2 <- rnorm(n, pred_SF2, sigma)
-  prob_SF2 <- mean(MC_SF2 > 0)
-  if (prob_SF2 > 0.5) {winner2 <- "VBC"; loser2 <- "RMB"}
-  else {winner2 <- "RMB"; loser2 <- "VBC"}
-  
-  pred_3rd <- predict_without_home_effect(
-    model = model,
-    season = "26",
-    team_A = loser1,
-    team_B = loser2
-  )[, "fit"]
-  MC_3rd <- rnorm(n, pred_3rd, sigma)
-  prob_3rd <- mean(MC_3rd > 0)
-  
-  pred_final <- predict_without_home_effect(
-    model = model,
-    season = "26",
-    team_A = winner1,
-    team_B = winner2
-  )[, "fit"]
-  MC_final <- rnorm(n, pred_final, sigma)
-  prob_final <- mean(MC_final > 0)
-  
-  f4 <- data.frame(
-    Game = c("Semi-final 1", "Semi-final 2", "3rd place", "Final"),
-    Team_A = c("OLY", "VBC", loser1, winner1),
-    Team_B = c("FBB", "RMB", loser2, winner2),
-    Score_diff_pred = c(pred_SF1, pred_SF2, pred_3rd, pred_final),
-    Probability = c(prob_SF1, prob_SF2, prob_3rd, prob_final)
+  if (!intercept) {pred <- pred - model$coefficients[[1]]}
+  MC <- rnorm(n, pred, sigma)
+  prob <- mean(MC > 0)
+  if (prob > 0.5) {winner <- team_A} else {winner <- team_B}
+
+  game <- data.frame(
+    Game = game_name,
+    Team_A = team_A,
+    Team_B = team_B,
+    Score_diff_pred = pred,
+    Probability = prob,
+    Winner = winner
   )
   return(list(
-    summary = f4,
-    MC = list(
-      SF1   = MC_SF1,
-      SF2   = MC_SF2,
-      third = MC_3rd,
-      final = MC_final
-    )
+    summary = game,
+    MC = MC # list(SF1 = MC_SF1, SF2 = MC_SF2, third = MC_3rd,final = MC_final)
   ))
 }
 
-predicted_f426 <- predict_f426(model = fit)
-predictions_f426 <- predicted_f426$summary
-MC_estimations_f426 <- predicted_f426$MC
+# __ Predict without intercept _________________________________________________
+predicted_SF1_without <- predict_f426_one_game(
+  n, seed, model = fit, intercept = FALSE,
+  game_name = "Semi final 1", team_A = "OLY", team_B = "FBB"
+)
+predicted_SF2_without <- predict_f426_one_game(
+  n, seed, model = fit, intercept = FALSE,
+  game_name = "Semi final 2", team_A = "VBC", team_B = "RMB"
+)
+predictions_SF_without <- bind_rows(
+  predicted_SF1_without$summary,
+  predicted_SF2_without$summary
+)
 
-# __ Heatmaps __________________________________________________________________
-plot_f4_heatmaps <- function(predicted_f426) {
-  
-  MC <- predicted_f426$MC
-  summary <- predicted_f426$summary
-  
-  get_max_prob <- function(mc) {
-    tibble(diff = round(mc)) |>
-      filter(diff >= -15, diff <= 15) |>
-      count(diff) |>
-      mutate(prob = n / sum(n)) |>
-      pull(prob) |>
-      max()
-  }
-  
-  max_prob <- max(
-    get_max_prob(MC$SF1),
-    get_max_prob(MC$SF2),
-    get_max_prob(MC$third),
-    get_max_prob(MC$final)
+# __ Predict with intercept for OLY ____________________________________________
+predicted_SF1_with <- predict_f426_one_game(
+  n, seed, model = fit, intercept = TRUE,
+  game_name = "Semi final 1", team_A = "OLY", team_B = "FBB"
+)
+predictions_SF_with_for_OLY <- bind_rows(
+  predicted_SF1_with$summary,
+  predicted_SF2_without$summary
+)
+
+# __ Predict with intercept ____________________________________________________
+predicted_SF2_with <- predict_f426_one_game(
+  n, seed, model = fit, intercept = TRUE,
+  game_name = "Semi final 2", team_A = "VBC", team_B = "RMB"
+)
+predictions_SF_with <- bind_rows(
+  predicted_SF1_with$summary,
+  predicted_SF2_with$summary
+)
+
+# __ Adapt final four game data to bind_rows ___________________________________
+build_f4_obs <- function(
+  team_A, team_B, pred_diff, td = total_diff[["playoffs26"]]
+) {
+  tibble(
+    date = as.Date(NA),
+    playoff = TRUE,
+    final_four = TRUE,
+    serie = NA_character_,
+    team_home = team_A,
+    pts_home = NA_real_,
+    team_away = team_B,
+    pts_away = NA_real_,
+    score_diff = pred_diff,
+    wins_A = 0L,
+    wins_B = 0L,
+    total_diff_home = td |> filter(team == team_A) |> pull(total_diff_weighted),
+    total_diff_away = td |> filter(team == team_B) |> pull(total_diff_weighted)
   )
-  
-  plot_MC_heatmap <- function(mc, team_A, team_B, title, pred_diff) {
-    tibble(diff = round(mc)) |>
-      filter(diff >= -15, diff <= 15) |>
-      count(diff) |>
-      mutate(prob = n / sum(n)) |>
-      ggplot(aes(x = diff, y = 1, fill = prob)) +
-      geom_tile() +
-      scale_fill_gradient(
-        low = "white",
-        high = "darkblue",
-        limits = c(0, max_prob)
-      ) +
-      scale_x_continuous(breaks = seq(-15, 15, by = 1)) +
-      labs(
-        title = title,
-        x = paste0("Score difference (", team_A, " - ", team_B, ")"),
-        y = NULL,
-        fill = "Probability"
-      ) +
-      theme_minimal() +
-      theme(axis.text.y = element_blank()) +
-      geom_text(
-        aes(
-          label = ifelse(
-            prob == max(prob),
-            paste0(diff, "\n(", round(prob*100, 1), "%)"),
-            ""
-          )
-        ),
-        color = "white", size = 3
-      ) +
-      geom_vline(
-        aes(xintercept = round(pred_diff), color = "Predicted diff"),
-        linetype = "dashed"
-      ) +
-      scale_color_manual(values = c("Predicted diff" = "red"), name = NULL)
-  }
-  
-  titles <- c("Semi-final 1", "Semi-final 2", "Third place", "Final")
-  
-  plots <- imap(MC, function(mc, name) {
-    i <- which(names(MC) == name)
-    plot_MC_heatmap(
-      mc = mc,
-      team_A = summary$Team_A[[i]],
-      team_B = summary$Team_B[[i]],
-      title = titles[[i]],
-      pred_diff = summary$Score_diff_pred[[i]]
-    )
-  })
-  
-  (plots$SF1 + plots$SF2) / (plots$third + plots$final) +
-    plot_layout(guides = "collect")
 }
 
-plot_f4_heatmaps(predicted_f426)
+# __ Scenario without intercept ________________________________________________
+sf1_obs_without <- build_f4_obs(
+  team_A = "OLY", team_B = "FBB",
+  pred_diff = predicted_SF1_without$summary$Score_diff_pred
+)
+sf2_obs_without <- build_f4_obs(
+  team_A = "VBC", team_B = "RMB",
+  pred_diff = predicted_SF2_without$summary$Score_diff_pred
+)
+
+new_obs_without <- bind_rows(sf1_obs_without, sf2_obs_without)
+
+train_f4_without <- bind_rows(train_rolling, new_obs_without) |>
+  prepare_data("OLY")
+fit_f4_without <- lm(
+  score_diff ~ team_home + team_away + total_diff_home + total_diff_away,
+  contrasts = list(team_home = contr.sum, team_away = contr.sum),
+  data = train_f4_without
+)
+
+predictions_F_without <- predict_f426_one_game(
+  n, seed, model = fit_f4_without, intercept = FALSE,
+  game_name = "Final",
+  team_A = predictions_SF_without$Winner[[1]],
+  team_B = predictions_SF_without$Winner[[2]]
+)$summary
+
+predictions_f4_without <- bind_rows(
+  predictions_SF_without,
+  predictions_F_without
+)
+
+cat("Without considering the intercept :\n")
+print(predictions_f4_without)
+
+# __ Scenario with intercept for OLY ___________________________________________
+sf1_obs_with <- build_f4_obs(
+  team_A = "OLY", team_B = "FBB",
+  pred_diff = predicted_SF1_with$summary$Score_diff_pred
+)
+
+new_obs_with_for_OLY <- bind_rows(sf1_obs_with, sf2_obs_without)
+
+train_f4_with_for_OLY <- bind_rows(train_rolling, new_obs_with_for_OLY) |>
+  prepare_data("OLY")
+fit_f4_with_for_OLY <- lm(
+  score_diff ~ team_home + team_away + total_diff_home + total_diff_away,
+  contrasts = list(team_home = contr.sum, team_away = contr.sum),
+  data = train_f4_with_for_OLY
+)
+
+predictions_F_with_for_OLY <- predict_f426_one_game(
+  n, seed, model = fit_f4_with_for_OLY, intercept = TRUE,
+  game_name = "Final",
+  team_A = predictions_SF_with_for_OLY$Winner[[1]],
+  team_B = predictions_SF_with_for_OLY$Winner[[2]]
+)$summary
+
+predictions_f4_with_for_OLY <- bind_rows(
+  predictions_SF_with_for_OLY,
+  predictions_F_with_for_OLY
+)
+
+cat("Considering the intercept for Olympiacos only :\n")
+print(predictions_f4_with_for_OLY)
+
+# __ Heatmaps __________________________________________________________________
+# plot_f4_heatmaps <- function(predicted_f426) {
+#
+#   MC <- predicted_f426$MC
+#   summary <- predicted_f426$summary
+#
+#   get_max_prob <- function(mc) {
+#     tibble(diff = round(mc)) |>
+#       filter(diff >= -15, diff <= 15) |>
+#       count(diff) |>
+#       mutate(prob = n / sum(n)) |>
+#       pull(prob) |>
+#       max()
+#   }
+#
+#   max_prob <- max(
+#     get_max_prob(MC$SF1),
+#     get_max_prob(MC$SF2)
+#   )
+#
+#   plot_MC_heatmap <- function(mc, team_A, team_B, title, pred_diff) {
+#     tibble(diff = round(mc)) |>
+#       filter(diff >= -15, diff <= 15) |>
+#       count(diff) |>
+#       mutate(prob = n / sum(n)) |>
+#       ggplot(aes(x = diff, y = 1, fill = prob)) +
+#       geom_tile() +
+#       scale_fill_gradient(
+#         low = "white",
+#         high = "darkblue",
+#         limits = c(0, max_prob)
+#       ) +
+#       scale_x_continuous(breaks = seq(-15, 15, by = 1)) +
+#       labs(
+#         title = title,
+#         x = paste0("Score difference (", team_A, " - ", team_B, ")"),
+#         y = NULL,
+#         fill = "Probability"
+#       ) +
+#       theme_minimal() +
+#       theme(axis.text.y = element_blank()) +
+#       geom_text(
+#         aes(
+#           label = ifelse(
+#             prob == max(prob),
+#             paste0(diff, "\n(", round(prob*100, 1), "%)"),
+#             ""
+#           )
+#         ),
+#         color = "white", size = 3
+#       ) +
+#       geom_vline(
+#         aes(xintercept = round(pred_diff), color = "Predicted diff"),
+#         linetype = "dashed"
+#       ) +
+#       scale_color_manual(values = c("Predicted diff" = "red"), name = NULL)
+#   }
+#
+#   titles <- c("Semi-final 1", "Semi-final 2")
+#
+#   plots <- imap(MC, function(mc, name) {
+#     i <- which(names(MC) == name)
+#     plot_MC_heatmap(
+#       mc = mc,
+#       team_A = summary$Team_A[[i]],
+#       team_B = summary$Team_B[[i]],
+#       title = titles[[i]],
+#       pred_diff = summary$Score_diff_pred[[i]]
+#     )
+#   })
+#
+#   plots$SF1 + plots$SF2 +
+#     plot_layout(guides = "collect")
+# }
+#
+# ggsave(
+#   "outputs/heatmaps_f4_SF.png",
+#   plot = plot_f4_heatmaps(predicted_f426),
+#   width = 12, height = 6, dpi = 300
+# )
 
 # # __ Interpretations ___________________________________________________________
 # show_coefs <- function(model = fit) {
-# 
+#
 #   # Home
 #   coefs_home <- coef(model)[
 #     grepl("^team_home", names(coef(model)))
 #   ]
-# 
+#
 #   effects_home <- c(
 #     coefs_home,
 #     -sum(coefs_home)
 #   )
-# 
+#
 #   # Away
 #   coefs_away <- coef(model)[
 #     grepl("^team_away", names(coef(model)))
 #   ]
-# 
+#
 #   effects_away <- c(
 #     coefs_away,
 #     -sum(coefs_away)
 #   )
-# 
+#
 #   teams <- levels(droplevels(train$team_home))
-# 
+#
 #   tibble(
 #     team = teams,
 #     home_effect = effects_home,
