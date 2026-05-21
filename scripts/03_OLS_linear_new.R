@@ -263,28 +263,83 @@ predictions_f426 <- predicted_f426$summary
 MC_estimations_f426 <- predicted_f426$MC
 
 # __ Heatmaps __________________________________________________________________
-plot_MC_heatmap <- function(MC, team_A, team_B, title) {
+plot_f4_heatmaps <- function(predicted_f426) {
   
-  tibble(diff = round(MC)) |>
-    filter(diff >= -15, diff <= 15) |>
-    count(diff) |>
-    mutate(prob = n / sum(n)) |>
-    ggplot(aes(x = diff, y = 1, fill = prob)) +
-    geom_tile() +
-    scale_fill_gradient(low = "white", high = "darkblue") +
-    scale_x_continuous(breaks = seq(-15, 15, by = 1)) +
-    labs(
-      title = title,
-      x = paste0("Score difference (", team_A, " - ", team_B, ")"),
-      y = NULL,
-      fill = "Probability"
-    ) +
-    theme_minimal() +
-    theme(axis.text.y = element_blank())
+  MC <- predicted_f426$MC
+  summary <- predicted_f426$summary
+  
+  get_max_prob <- function(mc) {
+    tibble(diff = round(mc)) |>
+      filter(diff >= -15, diff <= 15) |>
+      count(diff) |>
+      mutate(prob = n / sum(n)) |>
+      pull(prob) |>
+      max()
+  }
+  
+  max_prob <- max(
+    get_max_prob(MC$SF1),
+    get_max_prob(MC$SF2),
+    get_max_prob(MC$third),
+    get_max_prob(MC$final)
+  )
+  
+  plot_MC_heatmap <- function(mc, team_A, team_B, title, pred_diff) {
+    tibble(diff = round(mc)) |>
+      filter(diff >= -15, diff <= 15) |>
+      count(diff) |>
+      mutate(prob = n / sum(n)) |>
+      ggplot(aes(x = diff, y = 1, fill = prob)) +
+      geom_tile() +
+      scale_fill_gradient(
+        low = "white",
+        high = "darkblue",
+        limits = c(0, max_prob)
+      ) +
+      scale_x_continuous(breaks = seq(-15, 15, by = 1)) +
+      labs(
+        title = title,
+        x = paste0("Score difference (", team_A, " - ", team_B, ")"),
+        y = NULL,
+        fill = "Probability"
+      ) +
+      theme_minimal() +
+      theme(axis.text.y = element_blank()) +
+      geom_text(
+        aes(
+          label = ifelse(
+            prob == max(prob),
+            paste0(diff, "\n(", round(prob*100, 1), "%)"),
+            ""
+          )
+        ),
+        color = "white", size = 3
+      ) +
+      geom_vline(
+        aes(xintercept = round(pred_diff), color = "Predicted diff"),
+        linetype = "dashed"
+      ) +
+      scale_color_manual(values = c("Predicted diff" = "red"), name = NULL)
+  }
+  
+  titles <- c("Semi-final 1", "Semi-final 2", "Third place", "Final")
+  
+  plots <- imap(MC, function(mc, name) {
+    i <- which(names(MC) == name)
+    plot_MC_heatmap(
+      mc = mc,
+      team_A = summary$Team_A[[i]],
+      team_B = summary$Team_B[[i]],
+      title = titles[[i]],
+      pred_diff = summary$Score_diff_pred[[i]]
+    )
+  })
+  
+  (plots$SF1 + plots$SF2) / (plots$third + plots$final) +
+    plot_layout(guides = "collect")
 }
 
-plot_MC_heatmap(MC_estimations_f426$SF1, "OLY", "FBB", "Semi-final 1")
-plot_MC_heatmap(MC_estimations_f426$SF2, "VBC", "RMB", "Semi-final 2")
+plot_f4_heatmaps(predicted_f426)
 
 # # __ Interpretations ___________________________________________________________
 # show_coefs <- function(model = fit) {
