@@ -4,7 +4,7 @@
 load_data <- function (phase, season) {
   
   path <-  file.path(
-    "data", "raw", "eul", phase,
+    "raw_data", phase,
     paste0("eul", "_", season, "_", phase, ".csv")
   )
   read_csv(path)
