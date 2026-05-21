@@ -1,11 +1,11 @@
 # 02_features_new.R
 
 # __ Define train & validation data ____________________________________________
-train_reg25 <- games$regular$`25`
-
-val_po25 <- games$playoffs$`25` |>
+train_reg25 <- games$regular$`25`|>
   arrange(date)
-val_reg26 <- games$regular$`26` |>
+train_po25 <- games$playoffs$`25` |>
+  arrange(date)
+train_reg26 <- games$regular$`26` |>
   arrange(date)
 val_po26 <- games$playoffs$`26`|>
   arrange(date)
@@ -102,15 +102,15 @@ total_diff <- create_total_diff()
 join_total_diff <- function (
     total_diff,
     train_reg25,
-    val_po25,
-    val_reg26,
+    train_po25,
+    train_reg26,
     val_po26
 ) {
   
   datasets <- list(
     regular25 = train_reg25,
-    playoffs25 = val_po25,
-    regular26 = val_reg26,
+    playoffs25 = train_po25,
+    regular26 = train_reg26,
     playoffs26 = val_po26
   )
   
@@ -149,28 +149,28 @@ join_total_diff <- function (
 
   return(
     list(
-      train = datasets$regular25,
-      val = bind_rows(
+      train = bind_rows(
+        datasets$regular25,
         datasets$playoffs25,
-        datasets$regular26,
-        datasets$playoffs26
+        datasets$regular26
       ) |>
-        arrange(date)
+        arrange(date),
+      val_po26 = datasets$playoffs26
     )
   )
 }
 joined_games <- join_total_diff(
   total_diff,
   train_reg25,
-  val_po25,
-  val_reg26,
+  train_po25,
+  train_reg26,
   val_po26
 )
 train <- joined_games$train
-val <- joined_games$val
+val_po26 <- joined_games$val_po26
 
 # __ Clean environment _________________________________________________________
 to_keep <- c(
   "games", "team_codes", "all_teams",
-  "train", "val", "total_diff")
+  "train", "val_po26", "total_diff")
 rm(list = setdiff(ls(), to_keep))
