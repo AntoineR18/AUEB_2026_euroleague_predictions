@@ -1,30 +1,8 @@
-# 01_load_data.R
+# 12_data_preprocess.R
 
-# __ Load raw data _____________________________________________________________
-load_data <- function (phase, season) {
-  
-  path <-  file.path(
-    "raw_data", phase,
-    paste0("eul", "_", season, "_", phase, ".csv")
-  )
-  read_csv(path)
-}
-
-load_games <- function () {
-  
-  reg <- list()
-  po <- list()
-  
-  for (i in 21:26) {
-    reg[[paste0(i)]] <- load_data("reg", paste0(i-1, "-", i))
-    po[[paste0(i)]] <- load_data("po", paste0(i-1, "-", i))
-  }
-  return(list(
-    regular = reg,
-    playoffs = po
-  ))
-}
-games <- load_games()
+# __ Clean environment _________________________________________________________
+to_keep <- c("raw_games")
+rm(list = setdiff(ls(), to_keep))
 
 # __ Harmonize team names ______________________________________________________
 create_team_codes <- function () {
@@ -153,11 +131,11 @@ all_teams <- unique(unlist(team_codes))
 
 # __ Preprocess data ___________________________________________________________
 clean_games <- function(df, phase, season) {
-
+  
   Sys.setlocale("LC_TIME", "C")
-
+  
   df_clean <- df |>
-
+    
     # 1. Rename existing columns
     rename(
       date = Date,
@@ -166,17 +144,17 @@ clean_games <- function(df, phase, season) {
       team_away = Team,
       pts_away = `PTS...3`
     ) |>
-
+    
     # 2. Delete postponed & canceled games
     filter(!is.na(pts_home)) |>
-
+    
     # 3. update existing variables and create new ones
     mutate(
-
+      
       date = as.Date(date, "%a %b %d %Y"),
       team_home = recode(team_home, !!!team_codes[[season]]),
       team_away = recode(team_away, !!!team_codes[[season]]),
-
+      
       score_diff = pts_home - pts_away,
       playoff = phase == "playoffs",
       serie = NA_character_,
@@ -184,7 +162,7 @@ clean_games <- function(df, phase, season) {
       wins_B = 0,
       final_four = FALSE
     )
-
+  
   # 4. Rearrange columns
   df_clean <- df_clean[c(
     "date",
@@ -193,19 +171,19 @@ clean_games <- function(df, phase, season) {
     "score_diff",
     "wins_A", "wins_B"
   )]
-
+  
   return(df_clean)
 }
-games <- imap(games, function(phase_list, phase) {
+games <- imap(raw_games, function(phase_list, phase) {
   imap(phase_list, function(df, season) {
     clean_games(df, phase, season)
   })
 })
 
 verify_codes <- function(df, season) {
-
+  
   codes <- unname(unlist(team_codes[[season]]))
-
+  
   list(
     unknown_home = setdiff(unique(df$team_home), codes),
     unknown_away = setdiff(unique(df$team_away), codes)
@@ -218,14 +196,14 @@ imap(games, function(phase_list, phase) {
 })
 
 precise_po_f4 <- function (df) {
-
+  
   n <- nrow(df)
-
+  
   # 1. Check final four existence
   last4 <- df[(n-3):n, ]
   n_teams <- length(unique(c(last4$team_home, last4$team_away)))
   is_f4 <- n_teams == 4
-
+  
   # 2. Detail playoffs
   po <- if (is_f4) {
     df[1:(n-4), ]
@@ -233,7 +211,7 @@ precise_po_f4 <- function (df) {
     df
   } |>
     mutate(final_four = FALSE) |>
-
+    
     # 2.1. Group by series
     mutate(
       serie = paste(
@@ -243,7 +221,7 @@ precise_po_f4 <- function (df) {
       )
     ) |>
     group_by(serie) |>
-
+    
     # 2.2. Compute wins before game
     mutate(
       wins_A = lag(
@@ -261,11 +239,11 @@ precise_po_f4 <- function (df) {
         default = 0
       )
     ) |>
-
+    
     # 2.3. Ungroup
     ungroup()
-
-
+  
+  
   # 3. Manage final four
   f4 <- if (is_f4) {
     df[(n-3):n, ] |>
@@ -276,13 +254,9 @@ precise_po_f4 <- function (df) {
   } else {
     tibble()
   }
-
+  
   return(bind_rows(po, f4))
 }
 games$playoffs <- imap(games$playoffs, function(df, season) {
   precise_po_f4(df)
 })
-
-# __ Clean environment _________________________________________________________
-to_keep <- c("games", "team_codes", "all_teams")
-rm(list = setdiff(ls(), to_keep))

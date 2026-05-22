@@ -1,13 +1,121 @@
-# 03_final_four.R
+# 020_features.R
 
 # __ Clean environment _________________________________________________________
-to_keep <- c(
-  "games", "team_codes", "all_teams",
-  "train_reg26", "po26"
-)
+to_keep <- c("raw_games", "games", "all_teams")
 rm(list = setdiff(ls(), to_keep))
 
-# __ Adapt data ________________________________________________________________
+# __ Define train & validation data ____________________________________________
+
+train_reg25 <- games$regular$`25`|>
+  arrange(date)
+train_po25 <- games$playoffs$`25`|>
+  arrange(date)
+train_reg26 <- games$regular$`26` |>
+  arrange(date)
+po26 <- games$playoffs$`26`|>
+  arrange(date)
+
+# __ Add previous seasons effect _______________________________________________
+choose_weights <- c(0.70, 0.15, 0.10, 0.05)
+
+create_td <- function (
+    chosen_weights = choose_weights, 
+    season = "26"
+) {
+  
+  # 1. Create weighted_seasons
+  seasons <- as.character(as.numeric(season) - 1:4)
+  weighted_seasons <- setNames(chosen_weights, seasons)
+  
+  # 2. Initialize df
+  df <- tibble()
+  for (s in seasons) {
+    df <- bind_rows(
+      df,
+      games$regular[[s]] |>
+        mutate(season = s, phase = "regular"),
+      games$playoffs[[s]] |>
+        mutate(season = s, phase = "playoffs")
+    )
+  }
+  df <- df |>
+    arrange(date)
+  
+  # 3. Create home & away
+  home <- df |>
+    select(
+      season,
+      team = team_home,
+      pts_team = pts_home,
+      pts_opp = pts_away
+    )
+  away <- df |>
+    select(
+      season,
+      team = team_away,
+      pts_team = pts_away,
+      pts_opp = pts_home
+    )
+  
+  # 4. Compute total score difference
+  df <- bind_rows(home, away) |>
+    
+    # 4.1. Compute on each season
+    group_by(team, season) |>
+    summarise(
+      total_diff = sum(pts_team - pts_opp),
+      .groups = "drop"
+    ) |>
+    
+    # 4.2. Compute weighted season
+    mutate(weight = weighted_seasons[season]) |>
+    group_by(team) |>
+    summarise(total_diff_weighted = sum(total_diff * weight)) |>
+    
+    # 4.3. Delete useless teams
+    filter(team %in% all_teams)
+  
+  return(df)
+}
+total_diff <- create_td()
+
+join_td <- function(df, td) {
+  
+  total_diff_home <- td |>
+    rename(
+      total_diff_home = total_diff_weighted
+    )
+  
+  total_diff_away <- td |>
+    rename(
+      total_diff_away = total_diff_weighted
+    )
+  
+  df  <- df |>
+    left_join(
+      total_diff_home,
+      by = c("team_home" = "team")
+    ) |>
+    left_join(
+      total_diff_away,
+      by = c("team_away" = "team")
+    ) |>
+    mutate(
+      across(
+        c(total_diff_home, total_diff_away),
+        ~ replace_na(.x, 0)
+      )
+    )
+  return(df)
+}
+train_reg26 <- join_td(train_reg26, total_diff)
+po26 <- join_td(po26, total_diff)
+
+# __ Set up random framework ___________________________________________________
+N <- 10000
+Seed <- 1807
+
+# __ Useful functions __________________________________________________________
 prepare_data <- function (df, team_ref) {
   df |>
     mutate(
@@ -17,21 +125,7 @@ prepare_data <- function (df, team_ref) {
       team_away = relevel(team_away, ref = team_ref)
     )
 }
-train <- prepare_data(
-  df = bind_rows(train_reg26, po26),
-  team_ref = "OLY"
-)
 
-# __ Train model _______________________________________________________________
-fit <- lm(
-  score_diff ~ 
-    team_home + team_away,
-    # total_diff_home + total_diff_away,
-  data = train
-)
-summary(fit)
-
-# __ Final Four prediction with Monte Carlo estimation _________________________
 predict_f426_one_game <- function(
     n, seed,
     model, with_home_effect,
@@ -91,7 +185,7 @@ predict_f426_one_game <- function(
   
   # Deduce winner 
   if (prob > 0.5) {winner <- team_A} else {winner <- team_B}
-
+  
   game <- data.frame(
     Game = game_name,
     Team_A = team_A,
@@ -106,83 +200,6 @@ predict_f426_one_game <- function(
   ))
 }
 
-N <- 10000; Seed <- 1807
-
-# __ Predict without home effect _______________________________________________
-SF1_without <- predict_f426_one_game(
-  n = N, seed = Seed,
-  model = fit, with_home_effect = FALSE,
-  game_name = "Semi final 1", team_A = "OLY", team_B = "FBB"
-)
-SF2_without <- predict_f426_one_game(
-  n = N, seed = Seed,
-  model = fit, with_home_effect = FALSE,
-  game_name = "Semi final 2", team_A = "VBC", team_B = "RMB"
-)
-SF_without <- bind_rows(
-  SF1_without$summary,
-  SF2_without$summary
-)
-
-Final_without <- predict_f426_one_game(
-  n = N, seed = Seed,
-  model = fit, with_home_effect = FALSE,
-  game_name = "Final",
-  team_A = SF1_without$summary$Winner,
-  team_B = SF2_without$summary$Winner
-)
-f4_without <- bind_rows(
-  SF_without,
-  Final_without$summary
-)
-
-# __ Predict with home effect for OLY __________________________________________
-SF1_with <- predict_f426_one_game(
-  n = N, seed = Seed,
-  model = fit, with_home_effect = TRUE,
-  game_name = "Semi final 1", team_A = "OLY", team_B = "FBB"
-)
-SF_with_for_OLY <- bind_rows(
-  SF1_with$summary,
-  SF2_without$summary
-)
-
-Final_with_for_OLY <- predict_f426_one_game(
-  n = N, seed = Seed,
-  model = fit,
-  with_home_effect = "OLY" %in% SF_with_for_OLY$Winner,
-  game_name = "Final",
-  team_A = SF1_with$summary$Winner,
-  team_B = SF2_without$summary$Winner
-)
-f4_with_for_OLY <- bind_rows(
-  SF_with_for_OLY,
-  Final_with_for_OLY$summary
-)
-
-# __ Show predictions __________________________________________________________
-cat(
-  "Predictions for the Final Four :\n",
-  "Without considering the home effect for Olympiacos :\n"
-)
-print(f4_without)
-cat("Considering the home effect for Olympiacos :\n")
-print(f4_with_for_OLY)
-
-# __ Check predictions coherence _______________________________________________
-check_data <- left_join(
-  train |>
-    group_by(team = team_home) |>
-    summarise(mean_diff_home = mean(score_diff)),
-  train |>
-    group_by(team = team_away) |>
-    summarise(mean_diff_away = mean(-score_diff)),
-  by = "team"
-) |>
-  mutate(mean_diff = (mean_diff_home + mean_diff_away) / 2) |>
-  arrange(desc(mean_diff))
-
-# __ Heatmaps __________________________________________________________________
 plot_SF_heatmaps <- function(SF1_without, SF2_without, SF1_with) {
   
   get_max_prob <- function(mc) {
@@ -263,20 +280,3 @@ plot_SF_heatmaps <- function(SF1_without, SF2_without, SF1_with) {
   (p1 + p3) / p2 +
     plot_layout(guides = "collect")
 }
-plot_SF_heatmaps(SF1_without, SF2_without, SF1_with)
-
-ggsave(
-  "outputs/heatmaps_SF.png",
-  plot = plot_SF_heatmaps(SF1_without, SF2_without, SF1_with_for_OLY),
-  width = 12, height = 6, dpi = 300
-)
-
-
-# __ Clean environment _________________________________________________________
-to_keep <- c(
-  "games", "team_codes", "all_teams",
-  "train_reg26", "po26",
-  "train", "fit",
-  "SF1_without", "SF1_with", "SF2_without", "SF_without", "SF_with_for_OLY",
-  "check_data")
-rm(list = setdiff(ls(), to_keep))
