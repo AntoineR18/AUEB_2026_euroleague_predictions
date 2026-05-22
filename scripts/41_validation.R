@@ -18,8 +18,15 @@ train_with25 <- prepare_data(
 val <- po26
 
 # __ Train model _______________________________________________________________
-fit <- lm(score_diff ~ team_home + team_away, data = train)
-summary(fit)
+fit <- lm(
+  score_diff ~ 
+    team_home + team_away,
+  contrasts = list(
+    team_home = contr.sum,
+    team_away = contr.sum
+  ),
+  data = train
+)
 
 fit_with25 <- lm(score_diff ~ team_home + team_away, data = train_with25)
 summary(fit_with25)

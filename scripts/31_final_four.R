@@ -17,8 +17,11 @@ train <- prepare_data(
 
 # __ Train model _______________________________________________________________
 fit <- lm(
-  score_diff ~ 
-    team_home + team_away,
+  score_diff ~ team_home + team_away,
+  contrasts = list(
+    team_home = contr.sum,
+    team_away = contr.sum
+  ),
   data = train
 )
 
@@ -102,6 +105,7 @@ SF_heatmaps <- plot_SF_heatmaps(SF1_without, SF2_without, SF1_with)
 # __ Export results ____________________________________________________________
 write_csv(f4_without, "outputs/f4_predictions/f4_without.csv")
 write_csv(f4_with_for_OLY, "outputs/f4_predictions/f4_with_for_OLY.csv")
+write_csv(check_data, "outputs/f4_predictions/check_data.csv")
 
 print(xtable(f4_without), file = "outputs/f4_predictions/f4_without.tex")
 print(xtable(f4_with_for_OLY), file = "outputs/f4_predictions/f4_with_for_OLY.tex")
