@@ -28,4 +28,3 @@ load_games <- function () {
   ))
 }
 raw_games <- load_games()
-

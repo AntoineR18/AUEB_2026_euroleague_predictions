@@ -1,19 +1,22 @@
-# 31_final_four.R
+# 31_SF_predictions.R
 
 # __ Clean environment _________________________________________________________
 to_keep <- c(
   "raw_games", "all_teams",
-  "train_reg25", "train_po25", "train_reg26", "po26",
-  "N", "Seed",
+  "games", "N", "Seed",
   "prepare_data", "predict_f426_one_game", "plot_SF_heatmaps"
 )
 rm(list = setdiff(ls(), to_keep))
 
 # __ Prepare data ______________________________________________________________
 train <- prepare_data(
-  df = bind_rows(train_reg26, po26),
+  df = bind_rows(
+    games$regular$`26`,
+    games$playoffs$`26` |> filter(!final4)
+  ),
   team_ref = "OLY"
-)
+) |>
+  arrange(date)
 
 # __ Train model _______________________________________________________________
 fit <- lm(
@@ -41,18 +44,6 @@ SF_without <- bind_rows(
   SF2_without$summary
 )
 
-Final_without <- predict_f426_one_game(
-  n = N, seed = Seed,
-  model = fit, with_home_effect = FALSE,
-  game_name = "Final",
-  team_A = SF1_without$summary$Winner,
-  team_B = SF2_without$summary$Winner
-)
-f4_without <- bind_rows(
-  SF_without,
-  Final_without$summary
-)
-
 # __ Predict with home effect for OLY __________________________________________
 SF1_with <- predict_f426_one_game(
   n = N, seed = Seed,
@@ -64,30 +55,17 @@ SF_with_for_OLY <- bind_rows(
   SF2_without$summary
 )
 
-Final_with_for_OLY <- predict_f426_one_game(
-  n = N, seed = Seed,
-  model = fit,
-  with_home_effect = "OLY" %in% SF_with_for_OLY$Winner,
-  game_name = "Final",
-  team_A = SF1_with$summary$Winner,
-  team_B = SF2_without$summary$Winner
-)
-f4_with_for_OLY <- bind_rows(
-  SF_with_for_OLY,
-  Final_with_for_OLY$summary
-)
-
 # __ Show predictions __________________________________________________________
 cat(
-  "Predictions for the Final Four :\n",
+  "Predictions for the Euroleague semi-finals :\n",
   "Without considering the home effect for Olympiacos :\n"
 )
-print(f4_without)
+print(SF_without)
 cat("Considering the home effect for Olympiacos :\n")
-print(f4_with_for_OLY)
+print(SF_with_for_OLY)
 
 # __ Check predictions coherence _______________________________________________
-check_data <- left_join(
+mean_points <- left_join(
   train |>
     group_by(team = team_home) |>
     summarise(mean_diff_home = mean(score_diff)),
@@ -98,21 +76,20 @@ check_data <- left_join(
 ) |>
   mutate(mean_diff = (mean_diff_home + mean_diff_away) / 2) |>
   arrange(desc(mean_diff))
+head(mean_points, 4)
 
 # __ Heatmaps __________________________________________________________________
 SF_heatmaps <- plot_SF_heatmaps(SF1_without, SF2_without, SF1_with)
 
 # __ Export results ____________________________________________________________
-write_csv(f4_without, "outputs/f4_predictions/f4_without.csv")
-write_csv(f4_with_for_OLY, "outputs/f4_predictions/f4_with_for_OLY.csv")
-write_csv(check_data, "outputs/f4_predictions/check_data.csv")
+# write_csv(SF_without, "outputs/SF_predictions/SF_without.csv")
+# write_csv(SF_with_for_OLY, "outputs/SF_predictions/SF_with_for_OLY.csv")
 
-print(xtable(f4_without), file = "outputs/f4_predictions/f4_without.tex")
-print(xtable(f4_with_for_OLY), file = "outputs/f4_predictions/f4_with_for_OLY.tex")
-print(xtable(check_data), file = "outputs/f4_predictions/check_data.tex")
+# print(xtable(SF_without), file = "outputs/SF_predictions/SF_without.tex")
+# print(xtable(SF_with_for_OLY), file = "outputs/SF_predictions/SF_with_for_OLY.tex")
 
-ggsave(
-  "outputs/f4_predictions/SF_heatmaps.png",
-  plot = SF_heatmaps,
-  width = 12, height = 6, dpi = 300
-)
+# ggsave(
+#   "outputs/SF_predictions/SF_heatmaps.png",
+#   plot = SF_heatmaps,
+#   width = 12, height = 6, dpi = 300
+# )

@@ -133,10 +133,10 @@ all_teams <- unique(unlist(team_codes))
 clean_games <- function(df, phase, season) {
   
   Sys.setlocale("LC_TIME", "C")
-  
+
   df_clean <- df |>
     
-    # 1. Rename existing columns
+    # Rename existing columns
     rename(
       date = Date,
       team_home = Opp,
@@ -145,28 +145,34 @@ clean_games <- function(df, phase, season) {
       pts_away = `PTS...3`
     ) |>
     
-    # 2. Delete postponed & canceled games
+    # Delete postponed & canceled games
     filter(!is.na(pts_home)) |>
     
-    # 3. update existing variables and create new ones
+    # Update existing variables and create new ones
     mutate(
       
       date = as.Date(date, "%a %b %d %Y"),
       team_home = recode(team_home, !!!team_codes[[season]]),
       team_away = recode(team_away, !!!team_codes[[season]]),
-      
+  
       score_diff = pts_home - pts_away,
       playoff = phase == "playoffs",
       serie = NA_character_,
       wins_A = 0,
       wins_B = 0,
-      final_four = FALSE
     )
   
-  # 4. Rearrange columns
+  # Precise game phase
+  if (phase == "regular") {
+    df_clean <- df_clean |> mutate(final4 = FALSE)
+  } else {
+    df_clean <- df_clean |> rename(final4 = F4)
+  }
+
+  # Rearrange columns
   df_clean <- df_clean[c(
     "date",
-    "playoff", "final_four", "serie",
+    "playoff", "final4", "serie",
     "team_home", "pts_home", "team_away", "pts_away",
     "score_diff",
     "wins_A", "wins_B"
@@ -196,23 +202,10 @@ imap(games, function(phase_list, phase) {
 })
 
 precise_po_f4 <- function (df) {
+
+  df <- df |>
   
-  n <- nrow(df)
-  
-  # 1. Check final four existence
-  last4 <- df[(n-3):n, ]
-  n_teams <- length(unique(c(last4$team_home, last4$team_away)))
-  is_f4 <- n_teams == 4
-  
-  # 2. Detail playoffs
-  po <- if (is_f4) {
-    df[1:(n-4), ]
-  } else {
-    df
-  } |>
-    mutate(final_four = FALSE) |>
-    
-    # 2.1. Group by series
+  # Group by series
     mutate(
       serie = paste(
         pmin(team_home, team_away),
@@ -222,7 +215,7 @@ precise_po_f4 <- function (df) {
     ) |>
     group_by(serie) |>
     
-    # 2.2. Compute wins before game
+    # Compute wins before game
     mutate(
       wins_A = lag(
         cumsum(
@@ -239,23 +232,9 @@ precise_po_f4 <- function (df) {
         default = 0
       )
     ) |>
-    
-    # 2.3. Ungroup
     ungroup()
   
-  
-  # 3. Manage final four
-  f4 <- if (is_f4) {
-    df[(n-3):n, ] |>
-      mutate(
-        final_four = TRUE,
-        wins_A = 0L,
-        wins_B = 0L)
-  } else {
-    tibble()
-  }
-  
-  return(bind_rows(po, f4))
+  return(df)
 }
 games$playoffs <- imap(games$playoffs, function(df, season) {
   precise_po_f4(df)

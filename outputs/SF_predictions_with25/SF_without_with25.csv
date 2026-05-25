@@ -1,4 +1,3 @@
 Game,Team_A,Team_B,Score_diff_pred,Probability,Winner
 Semi final 1,OLY,FBB,3.670187829348651,0.6262,OLY
 Semi final 2,VBC,RMB,1.2253009573299662,0.5469,VBC
-Final,OLY,VBC,1.0500161423577912,0.5414,OLY

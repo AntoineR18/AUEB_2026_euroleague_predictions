@@ -4,18 +4,7 @@
 to_keep <- c("raw_games", "games", "all_teams")
 rm(list = setdiff(ls(), to_keep))
 
-# __ Define train & validation data ____________________________________________
-
-train_reg25 <- games$regular$`25`|>
-  arrange(date)
-train_po25 <- games$playoffs$`25`|>
-  arrange(date)
-train_reg26 <- games$regular$`26` |>
-  arrange(date)
-po26 <- games$playoffs$`26`|>
-  arrange(date)
-
-# __ Add previous seasons effect _______________________________________________
+# __ revious seasons effect ____________________________________________________
 choose_weights <- c(0.70, 0.15, 0.10, 0.05)
 
 create_td <- function (
@@ -108,8 +97,7 @@ join_td <- function(df, td) {
     )
   return(df)
 }
-train_reg26 <- join_td(train_reg26, total_diff)
-po26 <- join_td(po26, total_diff)
+
 
 # __ Set up random framework ___________________________________________________
 N <- 10000

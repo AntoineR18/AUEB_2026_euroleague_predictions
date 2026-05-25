@@ -71,14 +71,8 @@ validation_plots <- plot_validation(predictions, predictions_with25)
 validation_plots
 
 # __ Export results ____________________________________________________________
-ggsave(
-  "outputs/validation/scatter_timeline.png",
-  plot = validation_plots,
-  width = 12, height = 6, dpi = 300
-)
-
-# __ Clean environment _________________________________________________________
-to_keep <- c(
-  "raw_games"
-)
-rm(list = setdiff(ls(), to_keep))
+# ggsave(
+#   "outputs/validation/scatter_timeline.png",
+#   plot = validation_plots,
+#   width = 12, height = 6, dpi = 300
+# )
