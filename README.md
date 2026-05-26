@@ -1,13 +1,13 @@
-# Predictive models for basketball games
+# Predictive models for Euroleague
 
 ## Objective
 In the context of my internship at the Athens University of Economics and
 Business (AUEB), I have been asked to predict the results of the Euroleague Final Four.
 
 ## Packages used
-- **Data analysis workflow**: tidyverse
-- **Plot composition**: patchwork
-- **Table export**: xtable
+- tidyverse (data analysis and visualization)
+- patchwork (plot composition)
+- xtable (table export)
 
 ## Project structure
 ```
@@ -24,15 +24,19 @@ AUEB_2026_euroleague_predictions/
 └── scripts/
 ```
 
-## Data source
-[Basketball Reference](https://www.basketball-reference.com/)
-
 ## Workflow
 1. Data collection from Basketball Reference
 2. Data cleaning and preprocessing
 3. Model training
 4. Prediction generation
 5. Validation and output export
+
+## Data source
+[Basketball Reference](https://www.basketball-reference.com/)
+
+## Related work
+[GBL predictions](https://github.com/AntoineR18/AUEB_2026_GBL_predictions.git)
+[LNB Elite predictions](https://github.com/AntoineR18/AUEB_2026_LNB_predictions.git)
 
 ## Author
 Antoine Rustenholz
