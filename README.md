@@ -1,4 +1,4 @@
-# Predictive models for basketball games
+# Predictive models for Euroleague
 
 ## Objective
 In the context of my internship at the Athens University of Economics and
