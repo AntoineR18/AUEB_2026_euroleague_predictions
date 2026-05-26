@@ -1,28 +1,38 @@
 # Predictive models for basketball games
 
-## Aim
-In the framework of my internship at the Athens University of Economics and Business (AUEB), I am implementing regression models to predict outcomes and scores of basketball games. The aim is to predict the results of the EuroLeague, the Greek Basketball League and the LNB Pro A (French league).
+## Objective
+In the context of my internship at the Athens University of Economics and
+Business (AUEB), I have been asked to predict the results of the Euroleague Final Four.
 
 ## Packages used
-- **Scraping**: rvest, httr2
-- **Data manipulation**: tidyverse
-- **Distribution modeling**: fitdistrplus
+- **Data analysis workflow**: tidyverse
+- **Plot composition**: patchwork
+- **Table export**: xtable
 
 ## Project structure
 ```
-AUEB_Task1_pred_mod_EU_GR_FR
-├── data/
-│   ├── raw/
-│   └── processed/
+AUEB_2026_euroleague_predictions/
+├── raw_data/
+│   ├── po/
+│   ├── reg/
+│   └── standings/
 ├── outputs/
-├── scripts/
-├── .gitignore
-├── LICENSE
-└── README.md
+│   ├── final_predictions/
+│   ├── SF_predictions/
+│   ├── SF_predictions_with25/
+│   └── validation/
+└── scripts/
 ```
 
 ## Data source
 [Basketball Reference](https://www.basketball-reference.com/)
+
+## Workflow
+1. Data collection from Basketball Reference
+2. Data cleaning and preprocessing
+3. Model training
+4. Prediction generation
+5. Validation and output export
 
 ## Author
 Antoine Rustenholz

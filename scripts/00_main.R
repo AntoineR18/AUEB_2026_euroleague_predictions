@@ -1,8 +1,6 @@
 # 00_main.R
 
-library(readr)
 library(tidyverse)
-library(ggplot2)
 library(patchwork)
 library(xtable)
 
