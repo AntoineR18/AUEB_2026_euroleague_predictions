@@ -1,4 +1,4 @@
-# Predictive models for Euroleague
+# Predictive models for EuroLeague
 
 ## Objective
 In the context of my internship at the Athens University of Economics and
